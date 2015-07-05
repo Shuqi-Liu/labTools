@@ -10,7 +10,7 @@ classdef strokeSubjectData<subjectData
     
     properties (SetAccess=private)
         affectedSide='';
-        strokeDate=labDate(01,'Jan',0000);
+        strokeDate=labDate.default;
     end
     
     methods
@@ -47,4 +47,15 @@ classdef strokeSubjectData<subjectData
         end
     end
     
+    methods(Static)
+        function this=loadobj(s)
+            if isa(s,'struct')
+                this=strokeSubjectData(labDate.loadobj(s.dateOfBirth),s.sex,s.dominantLeg,s.dominantArm,s.height,s.weight,s.age,s.ID,s.affectedSide,labDate.loadobj(s.strokeDate));
+            elseif isa(s,'strokeSubjectData')
+               this=s; 
+            else
+                ME=MException();
+                throw(ME)
+            end
+        end
 end

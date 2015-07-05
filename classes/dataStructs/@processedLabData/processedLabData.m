@@ -44,7 +44,7 @@ classdef processedLabData < labData
     end
     
     properties (Dependent)        
-        isSingleStride %ever used?
+        isSingleStride %ever used?: YES -Pablo, 7/4/2015
         experimentalParams
     end
     

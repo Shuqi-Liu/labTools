@@ -14,7 +14,7 @@ classdef subjectData
 %See also: labDate, strokeSubjectData
     
     properties (SetAccess=private)
-        dateOfBirth='';
+        dateOfBirth=labDate.default;
         sex='';
         dominantLeg='';
         dominantArm='';
@@ -25,7 +25,7 @@ classdef subjectData
     end
     
     properties %other
-        cognitiveScores
+        cognitiveScores=[];
     end
     
     methods
@@ -57,6 +57,17 @@ classdef subjectData
             end
         end
         
+        %% Save
+        function s=saveobj(this)
+            ff=fields(this); %No dependent or hidden fields, everything gets saved.
+            for i=1:length(ff)
+                s.(ff{i})=saveobj(this.(ff{i}));
+            end
+        end
+            
+        
+        %% Other:
+        
         function this=set.cognitiveScores(this,scores)
             if isa(scores,'cognitiveData') || isempty(scores)
                 this.cognitiveScores=scores;
@@ -66,7 +77,12 @@ classdef subjectData
             end
         end  
     end
-    
-         
+    %%
+    methods(Static)
+        %% Load:
+        function this=loadobj(s)
+            this=subjectData(labDate.loadobj(s.dateOfBirth),s.sex,s.dominantLeg,s.dominantArm,s.height,s.weight,s.age,s.ID);
+        end
+    end
 end
 

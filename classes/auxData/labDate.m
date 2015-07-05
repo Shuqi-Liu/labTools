@@ -60,8 +60,38 @@ classdef labDate
            end 
             this.year=year;
         end
+        %% Save & Load
+        function s=saveobj(this)
+            counter=0;
+            while ~this.checkFields && counter<5;
+                    str=inputdlg(['Please enter correct date in mm/dd/yyyy format (current values are dd=' num2str(this.day) ', mm=' num2str(this.month) ', yyyy=' num2str(this.year) '):'],'s');
+                    try
+                    this.day=str2double(str{1}(1:2));
+                    this.month=str2double(str{1}(4:5));
+                    this.year=str2double(str{1}(7:10));
+                    catch
+                        counter=counter+1;
+                    end
+            end
+            if this.checkFields %In case the user cancelled the dialog
+                ff=fields(this);
+                for i=1:length(ff)
+                    s.(ff{i})=this.(ff{i});
+                end
+            else
+                ME=MException('labDate:save','Object is broken, fix before saving');
+                throw(ME);
+            end
+        end
         
-        %Setters
+        function boolFlag=checkFields(this)
+            dd=this.day;
+            mm=this.month;
+            yy=this.year;
+            boolFlag= ~isempty(dd) && ~isempty(mm) && ~isempty(yy) && dd<32 && dd>0 && rem(dd,1)==0  && mm<13 && mm>0 && rem(mm,1)==0  && yy<2100 && yy>1900 && rem(yy,1)==0;
+        end
+        
+        %% Setters
         function this=set.day(this,dd)
             if dd<32 && dd>0 && rem(dd,1)==0
                 this.day=dd;
@@ -91,6 +121,17 @@ classdef labDate
     %[days,months,years]=labDate1.timeSince(labDate2)
     
     methods(Static)
+        
+        function this=loadobj(s)
+            if isa(s,'struct')
+                this=labDate(s.day,s.month,s.year);
+            elseif isa(s,'labDate')
+                this=s;
+            else
+                ME=MException('labDate:Loader','Variable to load is neither struct nor labDate.');
+                throw(ME);
+            end
+        end
         
         function str=monthString(a)
         % monthString  turns numeric month value into a string

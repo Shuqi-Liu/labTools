@@ -34,6 +34,11 @@ classdef orientedLabTimeSeries  < labTimeSeries
                 end
         end
         
+        function s=saveobj(this)
+           s=saveobj@labTimeSeries(this);
+           s.orientation=this.orientation.saveobj;
+        end
+        
         %-------------------
         
         %Other I/O functions:
@@ -267,6 +272,11 @@ classdef orientedLabTimeSeries  < labTimeSeries
         
     end
     methods (Static)
+        
+        function this =loadobj(s)
+           thisA=loadobj@labTimeSeries(s);
+           this=orientedLabTimeSeries(thisA.Data,thisA.Time(1),thisA.sampPeriod,thisA.labels,s.orientation);
+        end
         function extendedLabels=addLabelSuffix(labels)
             if ischar(labels)
                 labels={labels};

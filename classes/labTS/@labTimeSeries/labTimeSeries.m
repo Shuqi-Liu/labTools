@@ -59,6 +59,17 @@ classdef labTimeSeries  < timeseries
             end
         end
         
+        %Save
+        function s=saveobj(this)
+            s.Data=this.Data;
+            s.t0=this.Time(1);
+            s.tf=this.Time(end);
+            s.labels=this.labels;
+            s.Ts=this.sampPeriod;
+            s.Quality=this.Quality;
+            s.QualityInfo=this.QualityInfo;
+        end
+        
         %-------------------
         
         %Other I/O functions:
@@ -287,60 +298,6 @@ classdef labTimeSeries  < timeseries
             newThis=split(this.getDataAsTS(label),t0,t1);
             [data,time,auxLabel]=getDataAsVector(newThis,label);
         end
-        
-%         function [steppedDataArray,bad,initTime,duration]=splitByEvents(this,eventTS,eventLabel,timeMargin)
-%            %eventTS needs to be a labTimeSeries with binary events as data
-%            %If eventLabel is not given, the first data column is used as
-%            %the relevant event marker. If given, eventLabel must be the
-%            %label of one of the data columns in eventTS
-%            
-%            %Check needed: is eventTS a labTimeSeries?
-%            if nargin>2
-%                 eventList=eventTS.getDataAsVector(eventLabel);
-%            else
-%                eventList=eventTS.Data(:,1);
-%            end
-%            %Check needed: is eventList binary?
-%            N=size(eventList,2); %Number of events & intervals to be found
-%            auxList=double(eventList)*2.^[0:N-1]'; %List all events in a single vector, by numbering them differently.
-%            %
-%            if nargin<4 || isempty(timeMargin)
-%                timeMargin=0;
-%            end
-%            
-%             refIdxLst=find(auxList==1);
-%             M=length(refIdxLst)-1;
-%             auxTime=eventTS.Time;
-%             aa=auxTime(refIdxLst);
-%             initTime=aa(1:M); %Initial time of each interval identified
-%             duration=diff(aa); %Duration of each interval
-%             steppedDataArray=cell(M,N);
-%             bad=false(M,1);
-%             for i=1:M %Going over strides
-%                 t0=auxTime(refIdxLst(i));
-%                 nextT0=auxTime(refIdxLst(i+1));
-%                 lastEventIdx=refIdxLst(i);
-%                 for j=1:N-1 %Going over events
-%                    nextEventIdx=lastEventIdx+find(auxList(lastEventIdx+1:refIdxLst(i+1)-1)==2^mod(j,N),1,'first');
-%                    t1= auxTime(nextEventIdx); %Look for next event
-%                    if ~isempty(t1) && ~isempty(t0)
-%                         steppedDataArray{i,j}=this.split(t0-timeMargin,t1+timeMargin);
-%                         t0=t1;
-%                         lastEventIdx=nextEventIdx;
-%                    else
-%                        warning(['Events were not in order on stride ' num2str(i) ', returning empty labTimeSeries.'])
-%                         if islogical(this.Data)
-%                             steppedDataArray{i,j}=labTimeSeries(false(0,size(this.Data,2)),zeros(1,0),1,this.labels);
-%                         else
-%                             steppedDataArray{i,j}=labTimeSeries(zeros(0,size(this.Data,2)),zeros(1,0),1,this.labels); %Empty labTimeSeries
-%                         end
-%                         bad(i)=true;
-%                    end
-%                    
-%                 end
-%                 steppedDataArray{i,N}=this.split(t0-timeMargin,nextT0+timeMargin); %This line is executed for the last interval btw events, which is the only one when there is a single event separating (N=1).
-%             end
-%         end
         
         function [slicedTS,initTime,duration]=sliceTS(this,timeBreakpoints,timeMargin)
           %Slices a single timeseries into a cell array of smaller timeseries, breaking at the given timeBreakpoints
@@ -656,6 +613,18 @@ classdef labTimeSeries  < timeseries
                end
                this=labTimeSeries(newData,labTSCellArray{1}.Time(1),masterSampPeriod,masterLabels);
            end
+        end
+        
+        function this=loadobj(s)
+            if isa(s,'struct')
+                this=labTimeSeries(s.Data,s.t0,s.Ts,s.labels);
+                this.Quality=s.Quality;
+                this.QualityInfo=s.QualityInfo;
+            elseif isa(s,'labTimeSeries')
+                this=s;
+            else
+                throw(MException)
+            end
         end
     end
     

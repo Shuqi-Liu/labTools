@@ -61,6 +61,14 @@ classdef experimentMetaData
             end            
         end
         
+        %% Save & load
+        function s=saveobj(this)
+            ff=fields(this); %No fields are dependent or hidden, so saving everything
+            for i=1:length(ff)
+                s.(ff{i})=saveobj(this.(ff{i}));
+            end
+        end
+        
         %% Setters
         function this=set.ID(this,ID)
             if isa(ID,'char') %&& nargin>0
@@ -204,6 +212,19 @@ classdef experimentMetaData
                end
            end
         end
+    end
+    
+    methods(Static)
+       function this=loadobj(s)
+           if isa(s,'struct')
+                this=experimentMetaData(s.ID,labDate.loadobj(s.date),s.experimenter,s.observations,s.conditionName,s.conditionDescription,s.trialsInCondition,s.Ntrials);
+           elseif isa(s,'experimentMetaData')
+               this=s;
+           else
+               ME=MException('experimentMetaData:loader','Variable to load is neither struct nor experimentMetaData');
+               throw(ME)
+           end
+        end 
     end
     
 end

@@ -38,6 +38,13 @@ classdef parameterSeries < labTimeSeries
             end       
         end
         
+        function s=saveobj(this)
+           s=saveobj@labTimeSeries(this);
+           s.description=this.description;
+           s.trialTypes_=this.trialTypes_;
+           s.hiddenTime=this.hiddenTime;
+        end
+        
         function this=setTrialTypes(this,types)
             this.trialTypes_=types;
         end
@@ -210,6 +217,14 @@ classdef parameterSeries < labTimeSeries
 %             end
              linkaxes(h1,'x')
                 
+        end
+    end
+    methods (Static)
+        function this=loadobj(s)
+            thisA=loadobj@labTimeSeries(s);
+            this=parameterSeries(thisA.Data,thisA.labels,thisA.Time,s.description);  
+           s.trialTypes_=this.trialTypes_;
+           s.hiddenTime=this.hiddenTime;
         end
     end
     

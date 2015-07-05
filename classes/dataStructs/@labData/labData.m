@@ -135,6 +135,11 @@ classdef labData
             
         end
         
+        %SAve:
+        function s=saveobj(this)
+            s=this; %DOXY
+        end
+        
         
         
         %Other I/O:
@@ -274,7 +279,11 @@ classdef labData
         end
         
     end
-    
+    methods (Static)
+        function this=loadobj(s)
+            this=s;
+        end
+    end
     
 end
 

@@ -35,7 +35,7 @@ classdef experimentData
     
     properties (Dependent)
         isRaw %true if data is an object of the rawLabData class
-        isProcessed %true if data is an oibject of the processedLabData class
+        isProcessed %true if data is an object of the processedLabData class
         isStepped %or strided
         fastLeg
     end
@@ -52,6 +52,18 @@ classdef experimentData
            if nargin>2 
                this.data=data;
            end
+        end
+        
+        %% Save & load
+       
+        function s=saveobj(this)
+            s.metaData=saveobj(this.metaData);
+            s.subData=saveobj(this.subData);
+            for i=1:length(this.data)
+                if ~isempty(this.data{i})
+                    s.data{i}=saveobj(this.data{i});
+                end
+            end
         end
         
         %% Setters for class properties
@@ -451,6 +463,30 @@ classdef experimentData
                 save([filename 'params.mat'],'adaptData','-v7.3'); %HH edit 2/12 - added 'params' to file name so experimentData file isn't overwritten
             end
         end
-	end
+    end
+    
+    methods(Static)
+        function this=loadobj(s)
+            if isa(s,'struct')
+                for i=1:length(s.data)
+                    if ~isempty(s.data{i})
+                        auxData{i}=labData.loadobj(s.data{i});
+                    end
+                end
+                if isfield(s.subData,'strokeDate')
+                    ss=strokeSubjectData.loadobj(s.subData);
+                else
+                    ss=subjectData.loadobj(s.subData);
+                end
+            this=experimentData(experimentMetaData.loadobj(s.metaData),ss,auxData);
+            elseif isa(s,'experimentData')
+                this=s;
+            else
+                ME=MEXception('experimentData:load','Variable is neither struct nor experimentData');
+                throw(ME)
+            end
+                
+        end
+    end
 end
 
