@@ -11,7 +11,7 @@ clc
 load('/Users/carlysombric/Desktop/Temp Storage/ParamFiles/Forget Subs/paramFiles/CogSubs.mat')
 groups = {'OldAbruptCognitive'};
 params = {'spatialContributionNorm2','stepTimeContributionNorm2','velocityContributionNorm2','netContributionNorm2'};
-results = getResults(CogSubs,params,groups,0);
+results = getResultsSMART(CogSubs,params,groups,0);
 
 COGparams={'IQ', '3MS', 'SPWMAcc',...
     'WCSNpersev', 'WCSPerPersev', 'WCSPerPersevErr', 'WCSSequencePersec',...
