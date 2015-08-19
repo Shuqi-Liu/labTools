@@ -41,6 +41,7 @@ classdef processedLabData < labData
         COPData
         COMData
         jointMomentsData
+        cognitiveScores %CJS 
     end
     
     properties (Dependent)        
@@ -68,6 +69,7 @@ classdef processedLabData < labData
                COPData=[];
                COMData=[];
                jointMomentsData=[];
+               cognitiveScores=[];
             end
             this@labData(metaData,markerData,EMGData,GRFData,beltSpeedSetData,beltSpeedReadData,accData,EEGData,footSwitches);
             this.gaitEvents=events;
