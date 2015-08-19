@@ -129,8 +129,11 @@ for g=1:ngroups
             tmafterData=adaptData.getParamInCond(params,'TM post');            
             tmafter=[tmafter; smoothedMax(tmafterData(1:10,:),transientNumPts,stepAsymData(1:10))];
             
-        else
+         else
             
+            %% OG Calculations
+            if 
+             
             % calculate TM and OG base in same manner as calculating OG after and TM after
             OGbaseData=adaptData.getParamInCond(params,'OG base');
             OGbase=[OGbase; nanmean(OGbaseData(1:transientNumPts,:))];
