@@ -4,7 +4,7 @@ cd('/Users/carlysombric/Desktop/Lab/GrantPrep2015/Cog Piloting Data')
 subs={'forget01', 'Forget02', 'forget04', 'Forget05', 'Forget06', 'Forget07'};%, 'forget03'
 %subs={'Forget02'};
 %subs={'forget04'};
-[RegenCog RegenLabels]=CognitiveCalculator( subs , 0);
+[RegenCog RegenLabels]=CognitiveCalculator( subs , 1);
 %Do I want to save the figures?
 
 %Then would want to save over the Cog data that is already in the files but
