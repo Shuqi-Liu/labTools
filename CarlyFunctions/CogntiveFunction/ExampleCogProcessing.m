@@ -35,16 +35,15 @@ MetaCorrelations(CogSubs, results,'OGafter',params,COGparams,groups);
 
 % COGparams={'ImplicitExpoRTHigh', 'ImplicitExpoRTLow'};
 %COGparams={'ImplicitExpoRTHigh', 'ImplicitExpoRTLow', 'ImplicithighRTSS3', 'ImplicitlowRTSS3'};
-% COGparams={'ImplicithighRTSS3'};
-%   MetaCorrelations(CogSubs, results,'Strides2SS',params,COGparams,groups);
+ COGparams={'ImplicithighRTSS3'};
+   MetaCorrelations(CogSubs, results,'Strides2SS',params,COGparams,groups);
 
 %%COGparams={'ImplicitRecAcc', 'ImplicitRecLow', 'ImplicitExpoRTHigh', 'ImplicitExpoRTLow'};
-%  COGparams={'ImplicithighRTSS3'};
-%  MetaCorrelations(CogSubs, results,'PerForget',params,COGparams,groups);
+  COGparams={'ImplicithighRTSS3'};
+  MetaCorrelations(CogSubs, results,'PerForget',params,COGparams,groups);
 
 
-epochs = {'Strides2SS','PerForget','catch','TMsteady','OGafter'};
-%epochs = {'PerForget'};
-indivSubFlag = 0;
-barGroups(CogSubs,results,groups,params,epochs,indivSubFlag)
+% epochs = {'Strides2SS','PerForget','catch','TMsteady','OGafter'};
+% indivSubFlag = 0;
+% barGroups(CogSubs,results,groups,params,epochs,indivSubFlag)
 
