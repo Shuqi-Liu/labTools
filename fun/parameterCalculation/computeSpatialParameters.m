@@ -105,7 +105,9 @@ aux={'direction',               '-1 if walking towards window, 1 if walking towa
     'xSlow_fromAvgHip',         'Ankle placement of fast leg at SHS2 (realtive to avg hip marker and avg hip postion during time) (in mm)';...
     'velocitySlow'              ' Velocity of  slow foot relative to hip, should be close to actual belt speed in TM trials';...
     'velocityFast'              ' Velocity of  fast foot relative to hip, should be close to actual belt speed in TM trials';...
-%    'avgRotation',            'Angle that the coordinates were rotated by';...
+    'singleStanceSlowAnkleSpeed',   'Absolute speed of slow Ankle during contralateral swing';...
+    'singleStanceFastAnkleSpeed',    'Absolute speed of fast Ankle during contralateral swing';...
+    %    'avgRotation',            'Angle that the coordinates were rotated by';...
     }; 
 
 paramLabels=aux(:,1);
@@ -378,6 +380,21 @@ for i=1:T
     if ~isnan(timeSTO(i)) && ~isnan(timeSHS2(i))
         fToePartial=fToeAbsVel.split(timeSTO(i),timeSHS2(i)).getOrientedData();
         singleStanceSpeedFastAbs(i)=prctile(fToePartial(:,1,2),70);
+    end
+end
+
+singleStanceSlowAnkleSpeed=nan(T,1);
+singleStanceFastAnkleSpeed=nan(T,1);
+sAnkVel=markerData.getDataAsOTS({[s 'ANK']}).derivate;
+fAnkVel=markerData.getDataAsOTS({[f 'ANK']}).derivate;
+for i=1:T
+    if ~isnan(timeFTO(i)) && ~isnan(timeFHS(i)) %Case that the event is missing
+        sAnkPartial=sAnkVel.split(timeFTO(i),timeFHS(i)).getOrientedData();
+        singleStanceSlowAnkleSpeed(i)=prctile(sAnkPartial(:,1,2),70);
+    end
+    if ~isnan(timeSTO(i)) && ~isnan(timeSHS2(i))
+        fToePartial=fAnkVel.split(timeSTO(i),timeSHS2(i)).getOrientedData();
+        singleStanceFastAnkleSpeed(i)=prctile(fToePartial(:,1,2),70);
     end
 end
 
