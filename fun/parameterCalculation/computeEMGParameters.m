@@ -120,7 +120,7 @@ for i=1:N %For each stride
         for k=1:length(phaseBasedLabelSuff)
             switch(phaseBasedLabelSuff{k})
                 case 's' %Mean EMG per phase (12 phases)
-                    paramDataS=full(sum(mData.*relIdx)./sum(relIdx)); %NaN if no samples in phase
+                    paramDataS=full(sum(repmat(mData,1,size(relIdx,2)).*relIdx)./sum(relIdx)); %NaN if no samples in phase
                     paramDataS(any((qq~=0) .* relIdx))=NaN;
                 otherwise
                         %nop
