@@ -19,7 +19,8 @@ for i=1:length(markerList)
     if ~isempty(name)
         name=name{1}(1:end-1);
         aux=markerData.getDataAsVector({[name orientation.sideAxis],[name orientation.foreaftAxis],[name orientation.updownAxis]});
-        aux=aux.*u;
+        %aux=aux.*u; %R2016 incompatible
+        aux=aux.*repmat(u,size(aux,1),1);
     else %Marker is missing from full trial (it happens)
         aux=nan(length(markerData.Time),3);
         warning(['Marker ' markerList{i} ' was missing from markerData.'])
