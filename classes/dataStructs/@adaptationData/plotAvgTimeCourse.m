@@ -42,7 +42,7 @@ if nargin>2
     if isa(conditions,'char')
         conditions={conditions};
     end
-else   
+else %if not provided, use all conditions.   
     if ~legacyVersion
         conditions=adaptDataList{1}{1}.metaData.conditionName; %default
     else

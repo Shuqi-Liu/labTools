@@ -289,6 +289,7 @@ classdef groupAdaptationData
 
         end
 
+        %deprecated
         function [newThis]=normalizeToBaseline(this,labelPrefix,baseConds2)
             newThis=this;
             if nargin<3
@@ -304,6 +305,7 @@ classdef groupAdaptationData
                 noMinNormFlag=0;
             end
             for i=1:length(this.ID)
+                fprintf('Normalizing data: %d\n', i);
                 this.adaptData{i}=this.adaptData{i}.normalizeToBaselineEpoch(labelPrefix,baseEpoch,noMinNormFlag);
             end
         end
@@ -570,6 +572,14 @@ classdef groupAdaptationData
         [figHandle,allData]=plotBars(this,label,removeBiasFlag,plotIndividualsFlag,condList,numberOfStrides,exemptFirst,exemptLast,legendNames,significanceThreshold,plotHandles,colors,signPlotMatrix);
 
         %Checkerboard:
+        %labelPrefix: the muscle and subinterval labels with correct formatting (ends with s)
+        %epochs: the epoch to plot
+        %fh: the figure object
+        %ph: the subplot to use
+        %refEpoch: the reference epoch to use
+        %flipLR:0, 1, 2
+        %summFlag: summary method
+        %
         function [fh,ph,labels,dataE,dataRef]=plotCheckerboards(this,labelPrefix,epochs,fh,ph,refEpoch,flipLR,summFlag)
             %This is meant to be used with parameters that end in
             %'s1...s12' as are computed for EMG and angles. The 's' must be
@@ -580,25 +590,34 @@ classdef groupAdaptationData
             elseif flipLR==2 %Codeword for doing symmetry plot
                 flipLR=false; %FlipLR is implicit in doing a symmetry plot
                 symmetryFlag=true;
-            else symmetryFlag=false;
             end
 
-            %First, get epoch data:
+            %First, get epoch data
+            %dataE: Dimension: #labels by #epochs by #subjects, 1z - 1
+            %subject's data 
+            %label: Dimension: suffix x prefix
             [dataE,labels]=this.getPrefixedEpochData(labelPrefix,epochs,true); %Padding with NaNs
-            Np=size(labels,1);
-            dataE=reshape(dataE,Np,length(labelPrefix),size(dataE,2),size(dataE,3));
+            Np=size(labels); %row, column count
+            %4D data in dimension: suffix(interval) by prefix (muscles) by #epoch by #subjects
+            dataE=reshape(dataE,Np(1),Np(2),size(dataE,2),size(dataE,3));
             dataRef=[]; %For argout
+            %if baseline presents, get dataE by subtracting the baseline
             if nargin>5 && ~isempty(refEpoch)
                 [dataRef]=this.getPrefixedEpochData(labelPrefix,refEpoch, true); %Padding with NaNs
-                dataRef=reshape(dataRef,Np,length(labelPrefix),1,size(dataRef,3));
+                 %4D data in dimension: suffix(interval) by prefix (muscles) by #epoch by #subjects
+                dataRef=reshape(dataRef,Np(1),Np(2),1,size(dataRef,3));
                 dataE=dataE-dataRef;
             end
             if nargin<8 || isempty(summFlag)
                 summFlag='nanmean';
             end
-            eval(['fun=@(x) ' summFlag '(x,4);']);
-            dataS=fun(dataE);
-
+            if (~strcmp('1D',labelPrefix{1}))
+                eval(['fun=@(x) ' summFlag '(x,4);']);
+                dataS=fun(dataE); %summary of the data using mean or median, 
+                %if 2D, mean of each column, now 4D, mean of last dimension
+                %subject averaged for suffix by prefix by #epoch
+                %for 1 patient, dataS = dataE
+            end
             %Second: use ATS.plotCheckerboard
             if nargin<4 || isempty(fh)
                 fh=figure();
@@ -607,16 +626,35 @@ classdef groupAdaptationData
                 if nargin<5 || isempty(ph) || length(ph)~=length(epochs)
                     ph(i)=subplot(length(epochs),1,i);
                 end
-                evLabel={'sHS','','fTO','','','','fHS','','sTO','','',''};
-                ATS=alignedTimeSeries(0,1/numel(evLabel),dataS(:,:,i),labelPrefix,ones(1,Np),evLabel);
+                if (~strcmp('1D',labelPrefix{1}))
+                    %size:12, labelprefix size: 30 (muscles), out of the 12 sub interval,
+                    %mark the gait event, slowHillStrike (2 intervals) - fast
+                    %Toe Off (4 intervals) - fast HS(2 intervals) - slow Toe
+                    %Off(4 intervals)
+                    evLabel={'sHS','','fTO','','','','fHS','','sTO','','',''};
+                    %ATS object that holds the labels for muscles, data as
+                    %dataS in last dimension (average of the subjects for this epoch),
+                    %alignment vector (ones of 12) and labels (the strike event label)
+                    %Passed Params: 0,1/12,subjects avg data of this epoch for all suffix and prefix (2D), muscleslabel, 
+                    %ones of suffix size (12) as alignment vector, 12 alignment labels
+                    ATS=alignedTimeSeries(0,1/numel(evLabel),dataS(:,:,i),labelPrefix,ones(1,Np(1)),evLabel);
+                else
+                   subNum = size(dataE,4);
+                   %data: prefix(fast/slow) by subject
+                   dataS = reshape(dataE, subNum, Np(2));
+                   subLabel = {'1','2','3','4','5','6','7','8','9','10','11','12','13','14','15'};
+                   ATS=alignedTimeSeries(0,1/subNum,dataS,labelPrefix(2:end)); 
+                end
+                
                 if flipLR
-                    [ATS,iC]=ATS.flipLR;
+                    [ATS,iC]=ATS.flipLR; %iC: index of non-aligned side or contralateral
                 elseif symmetryFlag
                     [ATS,iC,iI]=ATS.getSym;
                 end
                 ATS.plotCheckerboard(fh,ph(i));
-                axes(ph(i));
+                axes(ph(i)); %create axis in the subplot (given container)
                 colorbar off;
+                %title the epoch and #of strides in the epoch
                 title([epochs.Properties.ObsNames{i} '[' num2str(epochs.Stride_No(i)) ']']);
             end
             if flipLR || symmetryFlag %Aligning all returned data if we do L/R flip
@@ -638,8 +676,18 @@ classdef groupAdaptationData
             if nargin<4 || isempty(padWithNaNFlag)
                 padWithNaNFlag=false;
             end
+            %1column = 1 cell array
             allData1=cell(length(epochs),length(this.ID));
+            %dataE: 1column = 1 epoch, dimension: labels x #epochs, each
+            %label's value is a summary of the strides (as specified in the
+            %epoch definition), in this case, the median of the last 40 strides
+            %of baseline for each label. 
+            %labels = #suffix * #prefix; i.e. 30prefix(30 markers), each 12
+            %subinterval -> 12x30
+            %allData: a cell array with each cell represents data for 1 epoch
+            %in dimension: strideNo * labels, 1 row = 1 stride's data
             [data1,labels,allData1(:,1)]=this.adaptData{1}.getPrefixedEpochData(labelPrefix,epochs,padWithNaNFlag);
+            %labels 
             dataE=nan(size(data1,1),size(data1,2),length(this.ID));
             dataE(:,:,1)=data1;
             for i=2:length(this.ID)

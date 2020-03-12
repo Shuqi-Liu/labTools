@@ -12,21 +12,24 @@ function [epochs] = defineEpochs(epochNames,condition,strideNo,exemptFirst,exemp
 %exemptFirst has to be positive
 %exemptLast has to be positive
 %summaryMethod is a cell array of strings, with the name of the function
-%used to summarize accross strides, default is 'nanmean'
+%used to summarize accross strides, default is 'nanmean'. Optional arg
+%ShortName. Optional Arg
 %Ex: [epochs] = defineEpochs({'Initial_A1','Last_A1','Initial_A2','Last_A2'},{'Adaptation 1','Adaptation 1','Adaptation 1(2nd time)','Adaptation 1(2nd time)'},[5 -40 5 -40],5,5,{'nanmean'})
 
 N=length(epochNames);
-if isa(condition,'char')
+if isa(condition,'char') %if condition is given as a cell, will return false. 
+    %If condition is passed in as a string directly, will create a cell
+    %here. 
     condition={condtion};
 end
-if nargin<6 || isempty(summaryMethod)
+if nargin<6 || isempty(summaryMethod) %summary method optional argument
     summaryMethod='nanmean';
 end
 
 if isa(summaryMethod,'char') %To allow for summaryMethod to be given as string directly
     summaryMethod={summaryMethod};
 end
-if numel(condition)==1
+if numel(condition)==1 %count number of elements in the array
     condition=repmat(condition,N,1);
 end
 if numel(strideNo)==1
@@ -41,13 +44,14 @@ end
 if numel(summaryMethod)==1
     summaryMethod=repmat(summaryMethod,N,1);
 end
-earlyOrLate=sign(strideNo)==1;
+earlyOrLate=sign(strideNo)==1; %logical array of 0 or 1 based on the sign of the stride
 if nargin<7 || isempty(shortName)
     shortName=cell(size(epochNames));
 elseif numel(shortName)==1
     shortName=repmat(shortName,N,1);
 end
 
+%using the sorted info to create a dataset
 epochs=dataset(condition(:),abs(strideNo(:)),exemptFirst(:),exemptLast(:),earlyOrLate(:),summaryMethod(:),shortName(:),'VarNames',{'Condition','Stride_No','ExemptFirst','ExemptLast','EarlyOrLate','summaryMethod','shortName'},'ObsNames',epochNames);
 end
 
