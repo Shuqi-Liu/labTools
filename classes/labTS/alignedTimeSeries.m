@@ -584,13 +584,13 @@ classdef alignedTimeSeries %<labTimeSeries %TODO: make this inherit from labTime
                [~,iC]=this.isaLabel(lC); %Index for non-aligned
                aux=regexprep(lC,['^' nonAlignedSide],alignedSide); %Getting aligned side labels
                [bI,iI]=this.isaLabel(aux); %Index for aligned
-               if ~all(bI) %Labels are not symm, aborting
-                   warning('Asked to flipLR but labels are not symmetrically present.')
-               else
+%                if ~all(bI) %Labels are not symm, aborting
+%                    warning('Asked to flipLR but labels are not symmetrically present.')
+%                else
                    this.Data(:,iC)=fftshift(this.Data(:,iC),1); %This just flips first and second halves of aligned data, no checks performed
                    this.alignmentLabels=regexprep(this.alignmentLabels,['^' alignedSide],'i');
                    this.alignmentLabels=regexprep(this.alignmentLabels,['^' nonAlignedSide],'c');
-               end
+%                end
            else
                 warning('Asked to flipLR but couldn''t find aligned side.')
                 iC=[];
