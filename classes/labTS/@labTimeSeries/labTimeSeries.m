@@ -451,10 +451,14 @@ classdef labTimeSeries  < timeseries
            oldData=this.getDataAsVector(inputParameterLabels);
            str='(';
            for i=1:size(oldData,2)
-               str=[str 'oldData(:,' num2str(i) '),'];
+               str=[str 'oldData(:,' num2str(i) '),']; %get input in form (oldData(:,1), oldData(:,2))...
            end
            str(end)=')'; %Replacing last comma with parenthesis
            eval(['newData=funHandle' str ';']); %Isn't there a way to do this without eval?
+           %compute the output newData using the provided function with the
+           %argument specified in str; here assuming each column of data is
+           %processed every time? Couldn't really do it using this syntax
+           %in command line in 2019R. 
         end
         
         function newThis=removeParameter(labels)
