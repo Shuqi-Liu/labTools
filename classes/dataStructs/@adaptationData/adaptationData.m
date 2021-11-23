@@ -234,6 +234,7 @@ classdef adaptationData
             newThis=this;
         end
 
+        %noMinNormFlat - optional arg
         function [newThis]=normalizeToBaselineEpoch(this,labelPrefix,baseEpoch,noMinNormFlag)
            %This normalization takes the last N strides from a given
            %'baseline' condition and uses it to normalize values of the
@@ -245,21 +246,46 @@ classdef adaptationData
             if nargin<2
                 error('Need to provide a prefix for parameters')
             end
+            %if only provided one string, construct a cell array of one
+            %string here
             if isa(labelPrefix,'char')
                 labelPrefix={labelPrefix};
             end
+            %noMinNormFlag optional parameter
             if nargin<4 || isempty(noMinNormFlag)
                 noMinNormFlag=0;
             end
-
+            
+            %only saves data per epoch, and labels, not saving the all
+            %(unsummarized data). 
+            %baseData: labels x #epochs here #epochs = 1
+            %label: suffix * prefix
             [baseData,label]=this.getPrefixedEpochData(labelPrefix,baseEpoch);
+            %reshape to: suffix * prefix size in this case 12x30, 
+            %size(label,1?= # rows
             baseData=reshape(baseData,size(label,1),numel(labelPrefix));
+            %min/max per column
             rangeValues=[min(baseData); max(baseData)];
-            if noMinNormFlag==1
+            if noMinNormFlag==1 %if true, set min for all columns to 0
                 rangeValues(1,:)=0;
             end
             for i=1:length(labelPrefix)
+                %stretch data contained in this object (data is of type ParameterSeries)
+                %Select data with the labels ( with the same prefix) 
+                %and map these data so that range(1,i) or min maps to 0 and max in rangeValues(2,i) maps to 1.
+                %Parameter: ith column in label, ith column in range
                 this.data=this.data.linearStretch(label(:,i),rangeValues(:,i));
+                %Here the operation applies to all data regardless of the
+                %epoch, the label should indexing out all data for a
+                %specific muscle at specific gait event for the entire
+                %experiment. Mapping is column wise - 1 muscle wise
+                %0 -> 1 muscle's EMG min of the 12 sub intervals, each
+                %interval's value = median of that interval in last 40
+                %strides.
+                %1 -> max of the medians during baseline
+                %So for data outside the late baseline, the mapping could
+                %lead to <0 or >1 value, if the EMG < min baseline or > max baseline. 
+               
             end
             newThis=this;
         end
@@ -651,6 +677,7 @@ classdef adaptationData
             %this must be adaptationData object
             %epochs must be a dataset created with defineEpochs()
             %labels is string or cell-array of strings to be used as parameter names
+            %padWithNaNFlag: optional parameter
             %OUTPUT:
             %data: length(labels) x length(epochs) matrix containing requested data
             %Ex:[data,validStrides,everyStrideData]=adaptData.getEpochData(epochs,{'doubleSupportFast'},0);
@@ -663,40 +690,67 @@ classdef adaptationData
                 padWithNaNFlag=false;
             end
 
-            %First: validate epochs:
+            %First: validate epochs, check the condition specified in the
+            %epoch is present in the current data. Return the flags, 1 =
+            %true/valid, 0 = invalid. length of the flag = # of conditions
+            %in epochs = # of epochs
             valid=this.validateEpochs(epochs);
 
             %Second: get data
             removeBiasFlag=0;
             conds=epochs.Condition;
+            %.* to get sign for each stride, use -0.5 to avoid 0 since
+            %EarlyOrLate is technically a boolean with 0 or 1, sign(0) = 0,
+            %wants to return -1 for 0 (late) or 1 for 1 (early)
             numberOfStrides=epochs.Stride_No .* sign(epochs.EarlyOrLate-.5);
             exemptLast=epochs.ExemptLast;
             exemptFirst=epochs.ExemptFirst;
+            %#epochs x labels, in this example labels: 30x12 = 360
+            %data = nan matrix 360 rows per epoch, 1 column = 1 epoch
             data=nan(length(labels),length(epochs));
+            %A row vector, each cell = # of valid strides for one epoch
             validStrides=nan(length(epochs),1);
             summaryFlag=epochs.summaryMethod;
+            %1 epoch per cell, valid or invalid; each cell in form strides
+            %in epoch x labels, for example 40 x 360 for late epoch, each
+            %row will be data for all muscles across 12 subintervals for
+            %one stride. If invalid, will populate a same dimension matrix
+            %with nan
             allData=cell(length(valid),1);
             for i=1:length(valid) %Each valid epoch
-                if valid(i)
+                if valid(i)%1xstridesxlabels dimension
                     [dataPoints]=getEarlyLateData_v2(this,labels,conds{i},removeBiasFlag,numberOfStrides(i),exemptLast(i),exemptFirst(i),padWithNaNFlag);%Get data
                     %Summarize it:
                     summFun=str2func(summaryFlag{i});
                     allData{i}=reshape(dataPoints{1},abs(numberOfStrides(i)),numel(labels));
+                    %summFun (this case median) for each column of allData
+                    %(for each label/muscle+subinterval), put into a column
+                    %vector if not already in column shape
                     data(:,i)=reshape(summFun(allData{i},1),numel(labels),1);
-                    validStrides(i)=sum(any(~isnan(allData{i}))); %Counting non-nan values for any label involved (if one parameter is non-nan for a stride, the stride is valid)
+                    %isnan mappes allData{i} to a 0,1 matrix; any(X)
+                    %returns 1 for columns with at least one nonzero
+                    %element, 0 for all 0 columns; but this operation
+                    %should really operate row wise (any per row and sum =
+                    %#of valid strides)?
+                    validStrides(i)=sum(any(~isnan(allData{i}))); 
+                    %FIXME: this is wrong,, should be any(~...,2) - operate
+                    %along 2nd dimension - rowwise
+                    %Counting non-nan values for any label involved 
+                    %(if one parameter is non-nan for a stride, the stride is valid)
                 else
                     warning('Invalid epoch found, returning NaNs')
                     data(:,i)=nan(numel(labels),1);
                     allData{i}=nan(abs(numberOfStrides(i)),numel(labels));
                 end
             end
-            if nargout>2
+            if nargout>2 %# of output arguments used, not sure when will be false?
                 everyStrideData=allData;
             end
         end
 
         function flags=validateEpochs(this,epochs)
-            flags=true(length(epochs),1);
+            flags=true(length(epochs),1); 
+            %lengthx1 logical array of 1, length is # of rows in epochs
             for i=1:length(epochs) %for each epoch
                 if this.isaCondition(epochs.Condition(i)) %all good
                     %nop
@@ -707,6 +761,14 @@ classdef adaptationData
             end
         end
 
+        %Return dataE: 1column = 1 epoch, dimension: labels x #epochs, each
+        %label's value is a summary of the strides (as specified in the
+        %epoch definition), in this case, the median of the last 40 strides
+        %of baseline for each label. 
+        %labels = #suffix * #prefix; i.e. 30prefix(30 markers), each 12
+        %subinterval -> 12x30
+        %allData: a cell array with each cell represents data for 1 epoch
+        %in dimension: strideNo * labels, 1 row = 1 stride's data
         function [dataE,labels,allData]=getPrefixedEpochData(this,labelPrefix,epochs,padWithNaNFlag)
             %This is meant to be used with parameters that end in
             %'s1...s12' as are computed for EMG and angles. The 's' must be
@@ -717,15 +779,35 @@ classdef adaptationData
             if nargin<4 || isempty(padWithNaNFlag)
                 padWithNaNFlag=false;
             end
-            labelPrefix=reshape(labelPrefix,1,numel(labelPrefix)); %Putting in row form
-            aux=this.data.getLabelsThatMatch(['^' labelPrefix{1} '[ ]?\d+$']); %Assuming same suffix for all
-            if isempty(aux)
-                error('Fail: did not find any parameters with the given prefixes')
-                return
+            %if not in row form already, put in row form
+            labelPrefix=reshape(labelPrefix,1,numel(labelPrefix)); 
+            %Use the first string in the cell as a flat to represent getting 1D data
+            %where the label is used as given, no special manipulation is
+            %needed like for EMG labels. (probably not the best way)
+            if (~strcmp(labelPrefix{1},'1D'))
+                %find labels from the current data with format label{1} then
+                %space then a number
+                aux=this.data.getLabelsThatMatch(['^' labelPrefix{1} '[ ]?\d+$']); %Assuming same suffix for all
+                if isempty(aux)
+                    error('Fail: did not find any parameters with the given prefixes')
+                    return
+                end
+                Np=length(aux);
+                %extracting suffixes found from aux
+                suffixes=cellfun(@(x) x(length(labelPrefix{1})+1:end),aux,'UniformOutput',false); %Extracting suffixes, I am lazy
+                %construct a labels matrix, filling prefix each repeat for Np
+                %rows and 1 column; suffix each repeat for Np columns and 1 row
+                %results in prefix{1} suffix1, prefix{1} suffix2; pre{2} suf1,
+                %pre{2} suf2;...
+                labels=strcat(repmat(labelPrefix,Np,1),repmat(suffixes,1,length(labelPrefix))); %To do
+            else
+                %skip the first flag label.
+                labels=labelPrefix(2:end);
             end
-            Np=length(aux);
-            suffixes=cellfun(@(x) x(length(labelPrefix{1})+1:end),aux,'UniformOutput',false); %Extracting suffixes, I am lazy
-            labels=strcat(repmat(labelPrefix,Np,1),repmat(suffixes,1,length(labelPrefix))); %To do
+            %labels(:) will list labels column by column and merge to a 1
+            %column vector. Return data (labels*epoch, 1 column = 1 epoch), 
+            %validStrides (not saved), 
+            %allData (cell array,1 cell corresponds to 1 epoch with stridesNo*labels)
             [dataE,~,allData]=this.getEpochData(epochs,labels(:),padWithNaNFlag);
         end
 

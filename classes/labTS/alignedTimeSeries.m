@@ -25,7 +25,7 @@ classdef alignedTimeSeries %<labTimeSeries %TODO: make this inherit from labTime
             end
             if size(Data,2)==length(labels)
                 this.Data=Data;
-                this.Time=t0+[0:size(Data,1)-1]*Ts;
+                this.Time=t0+[0:size(Data,1)-1]*Ts; %12 time points, with increment of Ts [0,1)
                 this.labels=labels;
                 if length(alignmentVector)~=length(alignmentLabels)
                     error('alignedTS:Constructor','Alignment vector and labels sizes do not match.')
@@ -576,21 +576,27 @@ classdef alignedTimeSeries %<labTimeSeries %TODO: make this inherit from labTime
         
         function [this,iC,iI]=flipLR(this)
            %Find the side that has the starting event:
-           alignedSide=this.alignmentLabels{1}(1);
-           nonAlignedSide=getOtherLeg(alignedSide);
-           %Flip non-aligned side:
-           lC=this.getLabelsThatMatch(['^' nonAlignedSide]); %Get non-aligned side labels
+           alignedSide=this.alignmentLabels{1}(1); %index out first character of the first string/label (s or f)
+           nonAlignedSide=getOtherLeg(alignedSide); %in this case, fast
+           %Flip non-aligned side: note that the lC is muscle label and
+           %alignmentLabel is interval
+           lC=this.getLabelsThatMatch(['^' nonAlignedSide]); %Get non-aligned side muscle labels
            if ~isempty(lC)
                [~,iC]=this.isaLabel(lC); %Index for non-aligned
-               aux=regexprep(lC,['^' nonAlignedSide],alignedSide); %Getting aligned side labels
+               aux=regexprep(lC,['^' nonAlignedSide],alignedSide); %Getting aligned side labels. Use lC (all labels for non-aligned side) and replace the leg label, save to aux
                [bI,iI]=this.isaLabel(aux); %Index for aligned
-               if ~all(bI) %Labels are not symm, aborting
-                   warning('Asked to flipLR but labels are not symmetrically present.')
-               else
-                   this.Data(:,iC)=fftshift(this.Data(:,iC),1); %This just flips first and second halves of aligned data, no checks performed
-                   this.alignmentLabels=regexprep(this.alignmentLabels,['^' alignedSide],'i');
-                   this.alignmentLabels=regexprep(this.alignmentLabels,['^' nonAlignedSide],'c');
-               end
+
+%               if ~all(bI) %Labels are not symm, aborting
+%                  warning('Asked to flipLR but labels are not symmetrically present.')
+%             else
+                   %fftshift on dimension1, flip the top and bottom half of
+                   %the non-aligned case. So for non-aligned muscle, the
+                   %time interval is {'fHS','','sTO','','','','sHS','','fTO','','',''};
+                   %As for each leg, the ip and contra leteral is flipped.
+                   this.Data(:,iC)=fftshift(this.Data(:,iC),1); %This just flips first and second halves of non-aligned data, no checks performed
+                   this.alignmentLabels=regexprep(this.alignmentLabels,['^' alignedSide],'i'); %change label for s to i in stride events
+                   this.alignmentLabels=regexprep(this.alignmentLabels,['^' nonAlignedSide],'c'); %from f to c (contraletral) in stride events
+%            end
            else
                 warning('Asked to flipLR but couldn''t find aligned side.')
                 iC=[];
@@ -617,11 +623,17 @@ classdef alignedTimeSeries %<labTimeSeries %TODO: make this inherit from labTime
            end
            m=this.mean;
            %imagesc(m.Data')
-           surf([this.Time, 2*this.Time(end)-this.Time(end-1)],[0:size(m.Data,2)],[[m.Data';m.Data(:,end)'],[m.Data(end,:)';0]],'EdgeColor','none')
+%            m.Data = flipud(m.Data);
+           m.Data = flip(m.Data,2);
+           %X: [time array, 1], Y=[0,1,...,m.DataColumnCounts], Z: Y by X
+           %dimension. m.Data', last row is the last column of m.Data
+           %repeated; last column is the last row of m.Data repeated,
+           %followed by 0.
+           surf([this.Time, 2*this.Time(end)-this.Time(end-1)],0:size(m.Data,2),[[m.Data';m.Data(:,end)'],[m.Data(end,:)';0]],'EdgeColor','none')
            view(2)
            ax=gca;
-           ax.YTick=[1:length(this.labels)]-.5;
-           ax.YTickLabels=this.labels;
+           ax.YTick=[1:length(this.labels)]-.5; %place tick only for each label and center the ticket position.
+           ax.YTickLabels=flip(this.labels);
            ax.XTick=[.5 .5+cumsum(this.alignmentVector)]/sum(this.alignmentVector) *this.Time(end) ;
            ax.XTickLabel=this.alignmentLabels;
            axis([this.Time(1) 2*this.Time(end)-this.Time(end-1) 0 size(m.Data,2)])
