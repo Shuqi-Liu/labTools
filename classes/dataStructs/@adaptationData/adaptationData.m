@@ -781,7 +781,7 @@ classdef adaptationData
                 labelPrefix={labelPrefix};
             end
             if nargin<4 || isempty(padWithNaNFlag)
-                padWithNaNFlag=false;
+                padWithNaNFlag=false; %DMMO 
             end
             %if not in row form already, put in row form
             labelPrefix=reshape(labelPrefix,1,numel(labelPrefix)); 
@@ -1098,12 +1098,64 @@ classdef adaptationData
             end
            [fh,ph,labels,dataE,dataRef]=this.createSingleSubjGroup.plotCheckerboards(labelPrefix,epochs,fh,ph,refEpoch,flipLR); %Call onto groupAdaptData method
         end
+        
+        function [dataE,dataRef,labels,groups]=getCheckerboardsData(this,labelPrefix,epochs,refEpoch,flipLR)
+            %This is meant to be used with parameters that end in
+            %'s1...s12' as are computed for EMG and angles. The 's' must be
+            %included in the labelPrefixes (to allow for other options too)
+            %See also: groupAdaptationData.getCheckerboardsData
+            
+            if nargin<5 || isempty(flipLR)
+                flipLR=false;
+            end
+         
+            if nargin<4
+                refEpoch=[];
+            end
+            [dataE,dataRef,labels,groups]=this.createSingleSubjGroup.getCheckerboardsData(labelPrefix,epochs,refEpoch,flipLR); %Call onto groupAdaptData method
+        end
 
 
         function gAD=createSingleSubjGroup(this)
             gAD=groupAdaptationData({this.subData.ID},{this},this.subData.ID);
         end
+
+        
+        function badSubj=RemoveBadMuscles(this,badMuscles)
+            %This is a function that change the values of the "bad" muscle to NaN.
+            
+            %This code was developed by SL and updated by DMMO
+
+            badSubj = this;
+            
+            for i = 1:numel(badMuscles)
+                
+                
+                badDataIdx=find(contains(badSubj.data.labels, [badMuscles{i},' ']));
+                
+                if isempty(badDataIdx)
+                    warning('No muscles were removed. Make sure that you normalize the data first')
+                    return
+                end
+                
+                if length(badDataIdx)<12
+                    badDataIdxlast=badDataIdx(end)+[1:3];
+                    badDataIdx= [badDataIdx; badDataIdxlast'];
+                end
+                
+                
+                badSubj.data.Data(:,badDataIdx) = nan;
+                
+                disp(['Removing (Setting NaN) of ' badMuscles{i} ' from Subject: ' badSubj.subData.ID])
+                
+            end
+            
+        end
+        
+        
+        
     end
+
 
 
 
