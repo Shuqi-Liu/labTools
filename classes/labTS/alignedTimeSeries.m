@@ -585,10 +585,9 @@ classdef alignedTimeSeries %<labTimeSeries %TODO: make this inherit from labTime
                [~,iC]=this.isaLabel(lC); %Index for non-aligned
                aux=regexprep(lC,['^' nonAlignedSide],alignedSide); %Getting aligned side labels. Use lC (all labels for non-aligned side) and replace the leg label, save to aux
                [bI,iI]=this.isaLabel(aux); %Index for aligned
-
-%               if ~all(bI) %Labels are not symm, aborting
-%                  warning('Asked to flipLR but labels are not symmetrically present.')
-%             else
+            if ~all(bI) %Labels are not symm, aborting
+                 warning('Asked to flipLR but labels are not symmetrically present.')
+            else
                    %fftshift on dimension1, flip the top and bottom half of
                    %the non-aligned case. So for non-aligned muscle, the
                    %time interval is {'fHS','','sTO','','','','sHS','','fTO','','',''};
@@ -596,7 +595,7 @@ classdef alignedTimeSeries %<labTimeSeries %TODO: make this inherit from labTime
                    this.Data(:,iC)=fftshift(this.Data(:,iC),1); %This just flips first and second halves of non-aligned data, no checks performed
                    this.alignmentLabels=regexprep(this.alignmentLabels,['^' alignedSide],'i'); %change label for s to i in stride events
                    this.alignmentLabels=regexprep(this.alignmentLabels,['^' nonAlignedSide],'c'); %from f to c (contraletral) in stride events
-%            end
+           end
            else
                 warning('Asked to flipLR but couldn''t find aligned side.')
                 iC=[];
@@ -637,7 +636,7 @@ classdef alignedTimeSeries %<labTimeSeries %TODO: make this inherit from labTime
            m=this.mean;
            %imagesc(m.Data')
 %            m.Data = flipud(m.Data);
-           m.Data = flip(m.Data,2);
+%            m.Data = flip(m.Data,2);
            %X: [time array, 1], Y=[0,1,...,m.DataColumnCounts], Z: Y by X
            %dimension. m.Data', last row is the last column of m.Data
            %repeated; last column is the last row of m.Data repeated,
@@ -646,7 +645,7 @@ classdef alignedTimeSeries %<labTimeSeries %TODO: make this inherit from labTime
            view(2)
            ax=gca;
            ax.YTick=[1:length(this.labels)]-.5; %place tick only for each label and center the ticket position.
-           ax.YTickLabels=flip(this.labels);
+           ax.YTickLabels=this.labels;
            ax.XTick=[.5 .5+cumsum(this.alignmentVector)]/sum(this.alignmentVector) *this.Time(end) ;
            ax.XTickLabel=this.alignmentLabels;
            axis([this.Time(1) 2*this.Time(end)-this.Time(end-1) 0 size(m.Data,2)])

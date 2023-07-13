@@ -105,7 +105,7 @@
             commonOrder=median(order);
             badFlag=false;
             for i=1:length(this.adaptData)
-                if any(order(i,:)~=commonOrder)
+                if any(order(i,:)~=commonOrder) %FIXME: this always throws warning if it's a group of 1 subject.
                     warning(['Conditions are not in the same order for all subjects in the group: subject''s ' num2str(i) ' order is different from the median order. This will be a problem. Fix it.'])
                     badFlag=true;
                 end
@@ -598,7 +598,7 @@
             %subject's data 
             %label: Dimension: suffix x prefix
             [dataE,labels]=this.getPrefixedEpochData(labelPrefix,epochs,true); %Padding with NaNs
-            Np=size(labels); %row, column count
+            Np=size(labels,1); %row, column count
             %4D data in dimension: suffix(interval) by prefix (muscles) by #epoch by #subjects
             dataE=reshape(dataE,Np,length(labelPrefix),size(dataE,2),size(dataE,3));
 
