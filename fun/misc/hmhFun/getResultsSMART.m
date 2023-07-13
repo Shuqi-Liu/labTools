@@ -97,16 +97,16 @@ for g=1:ngroups
         
          if nargin>3 && maxPerturb==1             
                        
-            % compute TM and OG base in same manner as calculating OG after and TM after
-            stepAsymData=adaptData.getParamInCond('stepLengthAsym','OG base');
-            OGbaseData=adaptData.getParamInCond(params,'OG base');
+            % compute TM and OGBase in same manner as calculating OG after and TM after
+            stepAsymData=adaptData.getParamInCond('stepLengthAsym','OGBase');
+            OGbaseData=adaptData.getParamInCond(params,'OGBase');
             OGbase=[OGbase; smoothedMax(OGbaseData(1:10,:),transientNumPts,stepAsymData(1:10))];
 
-            stepAsymData=adaptData.getParamInCond('stepLengthAsym','TM base');
-            TMbaseData=adaptData.getParamInCond(params,'TM base');
+            stepAsymData=adaptData.getParamInCond('stepLengthAsym','TMBase');
+            TMbaseData=adaptData.getParamInCond(params,'TMBase');
             if isempty(TMbaseData)
-                stepAsymData=adaptData.getParamInCond('stepLengthAsym',{'slow base','fast base'});
-                TMbaseData=adaptData.getParamInCond(params,{'slow base','fast base'});
+                stepAsymData=adaptData.getParamInCond('stepLengthAsym',{'TMSlow','TMFast'});
+                TMbaseData=adaptData.getParamInCond(params,{'TMSlow','TMFast'});
             end
             TMbase=[TMbase; smoothedMax(TMbaseData(1:10,:),transientNumPts,stepAsymData(1:10))];
 
@@ -120,86 +120,86 @@ for g=1:ngroups
             % compute OG after as mean values during strides which cause a
             % maximum deviation from zero in STEP LENGTH ASYMMETRY during
             % 'transientNumPts' consecutive strides within first 10 strides
-            stepAsymData=adaptData.getParamInCond('stepLengthAsym','OG post');
-            ogafterData=adaptData.getParamInCond(params,'OG post');
+            stepAsymData=adaptData.getParamInCond('stepLengthAsym','OGPost');
+            ogafterData=adaptData.getParamInCond(params,'OGPost');
             ogafter=[ogafter; smoothedMax(ogafterData(1:10,:),transientNumPts,stepAsymData(1:10))];
             
             % compute TM after-effects same as OG after-effect
-            stepAsymData=adaptData.getParamInCond('stepLengthAsym','TM post');
-            tmafterData=adaptData.getParamInCond(params,'TM post');            
+            stepAsymData=adaptData.getParamInCond('stepLengthAsym','TMPost');
+            tmafterData=adaptData.getParamInCond(params,'TMPost');            
             tmafter=[tmafter; smoothedMax(tmafterData(1:10,:),transientNumPts,stepAsymData(1:10))];
             
          else
             
             %% If there are overground trials
-            if isempty(cellfun(@(x) strcmp(x, 'OG base'), adaptData.metaData.conditionName))==0
-            % calculate TM and OG base in same manner as calculating OG after and TM after
-            OGbaseData=adaptData.getParamInCond(params,'OG base');
+            if isempty(cellfun(@(x) strcmp(x, 'OGBase'), adaptData.metaData.conditionName))==0
+            % calculate TM and OGBase in same manner as calculating OG after and TM after
+            OGbaseData=adaptData.getParamInCond(params,'OGBase');
             OGbase=[OGbase; nanmean(OGbaseData(1:transientNumPts,:))];
             end
             
-            if isempty(cellfun(@(x) strcmp(x, 'OG post'), adaptData.metaData.conditionName))==0
-            ogafterData=adaptData.getParamInCond(params,'OG post');
+            if isempty(cellfun(@(x) strcmp(x, 'OGPost'), adaptData.metaData.conditionName))==0
+            ogafterData=adaptData.getParamInCond(params,'OGPost');
             ogafter=[ogafter; nanmean(ogafterData(1:transientNumPts,:))];
             end
             
-            if isempty(cellfun(@(x) strcmp(x, 'TM base'), adaptData.metaData.conditionName))==0
-            TMbaseData=adaptData.getParamInCond(params,'TM base');
+            if isempty(cellfun(@(x) strcmp(x, 'TMBase'), adaptData.metaData.conditionName))==0
+            TMbaseData=adaptData.getParamInCond(params,'TMBase');
             else
             
-                TMbaseData=adaptData.getParamInCond(params,{'slow base','fast base'});
+                TMbaseData=adaptData.getParamInCond(params,{'TMSlow','TMFast'});
             end            
             TMbase=[TMbase; nanmean(TMbaseData(1:transientNumPts,:))];
             
             %% If there is a catch
             % compute catch
             
-            if isempty(cellfun(@(x) strcmp(x, 'catch'), adaptData.metaData.conditionName))==0
-            tmcatchData=adaptData.getParamInCond(params,'catch');
-            if isempty(tmcatchData)
-                newtmcatchData=NaN(1,length(params));
-            elseif size(tmcatchData,1)<3
-                newtmcatchData=nanmean(tmcatchData);
-            else
-                newtmcatchData=nanmean(tmcatchData(1:catchNumPts,:));
-                %newtmcatchData=nanmean(tmcatchData);
-            end
-            tmCatch=[tmCatch; newtmcatchData];  
+            if (cellfun(@(x) strcmp(x, 'catch'), adaptData.metaData.conditionName))
+                tmcatchData=adaptData.getParamInCond(params,'catch');
+                if isempty(tmcatchData)
+                    newtmcatchData=NaN(1,length(params));
+                elseif size(tmcatchData,1)<3
+                    newtmcatchData=nanmean(tmcatchData);
+                else
+                    newtmcatchData=nanmean(tmcatchData(1:catchNumPts,:));
+                    %newtmcatchData=nanmean(tmcatchData);
+                end
+                tmCatch=[tmCatch; newtmcatchData];  
             end
             
-            if isempty(cellfun(@(x) strcmp(x, 'TM post'), adaptData.metaData.conditionName))==0
-            % compute TM post
-            tmafterData=adaptData.getParamInCond(params,'TM post');
+            if isempty(cellfun(@(x) strcmp(x, 'TMPost'), adaptData.metaData.conditionName))==0
+            % compute TMPost
+            tmafterData=adaptData.getParamInCond(params,'TMPost');
             tmafter=[tmafter; nanmean(tmafterData(1:transientNumPts,:))];
                 end
          end
                
         %% If there is a catch
-        if isempty(cellfun(@(x) strcmp(x, 'catch'), adaptData.metaData.conditionName))==0
-        % compute TM steady state before catch (mean of first transinetNumPts of last transinetNumPts+5 strides)
-        adapt1Data=adaptData.getParamInCond(params,'adaptation');
-        tmsteadyBC=[tmsteadyBC; nanmean(adapt1Data((end-5)-steadyNumPts+1:(end-5),:))];
-        
-        % compute TM steady state before OG walking (mean of first steadyNumPts of last steadyNumPts+5 strides)
-        
-        if isempty(cellfun(@(x) strcmp(x, 're-adaptation'), adaptData.metaData.conditionName))==0
-            adapt2Data=adaptData.getParamInCond(params,'re-adaptation');
-            if isempty(adapt2Data)
-                adapt2Data=adaptData.getParamInCond(params,'readaptation');    
-            end
-            tmsteady=[tmsteady; nanmean(adapt2Data((end-5)-steadyNumPts+1:(end-5),:))];
-        end
+        if (cellfun(@(x) strcmp(x, 'catch'), adaptData.metaData.conditionName))
+            % compute TM steady state before catch (mean of first transinetNumPts of last transinetNumPts+5 strides)
+            adapt1Data=adaptData.getParamInCond(params,'Adaptation');
+            tmsteadyBC=[tmsteadyBC; nanmean(adapt1Data((end-5)-steadyNumPts+1:(end-5),:))];
 
-        % compute average adaptation value before the catch
-        avgAdaptBC=[avgAdaptBC; nanmean(adapt1Data)];
-        
-        % compute average adaptation of all adaptation walking (both
-        % before and after catch)
-        adaptAllData=adaptData.getParamInCond(params,{'adaptation','re-adaptation'});
-        avgAdaptAll=[avgAdaptAll; nanmean(adaptAllData)];
+            % compute TM steady state before OG walking (mean of first steadyNumPts of last steadyNumPts+5 strides)
+
+            if isempty(cellfun(@(x) strcmp(x, 're-adaptation'), adaptData.metaData.conditionName))==0
+                adapt2Data=adaptData.getParamInCond(params,'re-adaptation');
+                if isempty(adapt2Data)
+                    adapt2Data=adaptData.getParamInCond(params,'readaptation');    
+                end
+                tmsteady=[tmsteady; nanmean(adapt2Data((end-5)-steadyNumPts+1:(end-5),:))];
+            end
+
+            % compute average adaptation value before the catch
+            avgAdaptBC=[avgAdaptBC; nanmean(adapt1Data)];
+
+            % compute average adaptation of all adaptation walking (both
+            % before and after catch)
+            adaptAllData=adaptData.getParamInCond(params,{'Adaptation','re-adaptation'});
+            avgAdaptAll=[avgAdaptAll; nanmean(adaptAllData)];
         else
             % compute TM steady state before OG walking (mean of first steadyNumPts of last steadyNumPts+5 strides)
-        adapt2Data=adaptData.getParamInCond(params,'adaptation');
+        adapt2Data=adaptData.getParamInCond(params,'Adaptation');
         tmsteady=[tmsteady; nanmean(adapt2Data((end-5)-steadyNumPts+1:(end-5),:))];
         end
         
@@ -208,7 +208,7 @@ for g=1:ngroups
         %Compute the %Forgetting, added 07/2015 CJS
         test=adaptData.metaData.conditionName;
         test(cellfun(@isempty,test))={''};
-        epoch=find(ismember(test, 'adaptation')==1);
+        epoch=find(ismember(test, 'Adaptation')==1);
         wantedtrials=adaptData.metaData.trialsInCondition{epoch};
         forgetB1Data=adaptData.getParamInTrial(params,wantedtrials(1));
         forgetB2Data=adaptData.getParamInTrial(params,wantedtrials(2));
@@ -266,7 +266,7 @@ for g=1:ngroups
     
     %calculate relative after-effects
 %% If there is OG walking
-if isempty(cellfun(@(x) strcmp(x, 'OG post'), adaptData.metaData.conditionName))==0
+if isempty(cellfun(@(x) strcmp(x, 'OGPost'), adaptData.metaData.conditionName))==0
 %     transfer=[transfer; 100*(ogafter./(tmcatch(:,3)*ones(1,3)))];
     idx = find(strcmp(params, 'stepLengthAsym'));
     if ~isempty(idx)
