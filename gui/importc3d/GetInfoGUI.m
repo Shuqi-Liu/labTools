@@ -5,7 +5,7 @@ function varargout = GetInfoGUI(varargin)
 %
 % See also: importc3d/ExpDetails, errorProofInfo
 
-% Last Modified by GUIDE v2.5 17-Jun-2021 15:27:02
+% Last Modified by GUIDE v2.5 23-Jan-2024 11:56:03
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -311,7 +311,10 @@ function  schenleyLab_Callback(hObject, eventdata, handles)
 % set(handles.schenleyLab,'enable','on')
 % guidata(hObject,handles);
 
-
+function  perceptualTasks_Callback(hObject, eventdata, handles)
+% Hint: get(hObject,'Value') returns toggle state of force_check
+% set(handles.schenleyLab,'enable','on')
+% guidata(hObject,handles);
 
 
 % --- Executes on button press in emg_check.
@@ -322,8 +325,6 @@ state = get(hObject,'Value');
 if state
     set(handles.Nexus,'enable','on')
     set(handles.EMGworks,'enable','on')
-    %     set(handles.secfile_browse,'enable','on')
-    %     set(handles.secfileloc,'enable','on')
     for i=1:16
         eval(['set(handles.emg1_' num2str(i) ',''enable'',''off'');']);
         eval(['set(handles.emg2_' num2str(i) ',''enable'',''off'');']);
@@ -369,11 +370,13 @@ state = get(hObject,'Value');
 if state
     set(handles.EMGworksFile1_search,'enable','on')
     set(handles.EMGworksLocation,'enable','on')
+    
     set(handles.SecFileSearchEMGworks,'enable','on')
     set(handles.SecondEMGworksLocation,'enable','on')
 else
     set(handles.EMGworksFile1_search,'enable','off')
     set(handles.EMGworksLocation,'enable','off')
+ 
     set(handles.SecFileSearchEMGworks,'enable','on')
     set(handles.SecondEMGworksLocation,'enable','on')
 end
@@ -716,8 +719,27 @@ if file~=0
            set(handles.schenleyLab,'Value',subInfo.schenleyLab);
         end
         
+        if isfield(subInfo, 'perceptualTasks')
+            set(handles.perceptualTasks,'Value',subInfo.perceptualTasks);
+        else 
+           subInfo.perceptualTasks = 0;
+           set(handles.perceptualTasks,'Value',subInfo.perceptualTasks);
+        end
+
+
+        if isfield(subInfo, 'emg_check')
+            set(handles.emg_check,'Value',subInfo.EMGs);
+        else
+            set(handles.emg_check,'Value',subInfo.EMGs);
+        end
+
+%         if ~handles.emg_check.Value~=0
+%             set(handles.emg_check,'enable','on');
+%         end
+
+
         if  isfield(handles, 'Nexus')
-%             set(handles.Nexus,'Value',subInfo.Nexus);
+            set(handles.Nexus,'Value',subInfo.Nexus);
             if ~handles.Nexus.Value~=0
                 set(handles.Nexus,'enable','on');
             end
@@ -725,16 +747,12 @@ if file~=0
         end
         
         if isfield(handles, 'EMGworks')
-%             set(handles.EMGworks,'Value',subInfo.EMGworks);
+            set(handles.EMGworks,'Value',subInfo.EMGworks);
             if ~handles.EMGworks.Value~=0
                 set(handles.EMGworks,'enable','on');
             end
         else
             set(handles.EMGworks,'enable','off');
-        end
-        
-        if ~handles.emg_check.Value~=0
-            set(handles.emg_check,'enable','on');
         end
         
         
@@ -1333,6 +1351,12 @@ function schenleyLab_CreateFcn(hObject, eventdata, handles)
 %     set(hObject,'BackgroundColor','white');
 % end
 
+% --- Executes on button press in perceptualTasks.
+function perceptualTasks_CreateFcn(hObject, eventdata, handles)
+% if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+%     set(hObject,'BackgroundColor','white');
+% end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %----------------------------ButtonDownFcns-----------------------------%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1548,8 +1572,13 @@ function schenleyLab_KeyPressFcn(hObject, eventdata, handles)
 %	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
 % handles    structure with handles and user data (see GUIDATA)
 
-
-
+% --- Executes on key press with focus on force_check and none of its controls.
+function perceptalTasks_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to scheleyLab check
+%	Key: name of the key that was pressed, in lower case
+%	Character: character interpretation of the key(s) that was pressed
+%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
+% handles    structure with handles and user data (see GUIDATA)
 
 % % --- Executes during object creation, after setting all properties.
 function type16_CreateFcn(hObject, eventdata, handles)
@@ -1612,3 +1641,12 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 
+
+% 
+% % --- Executes on button press in perceptualTasks.
+% function perceptualTasks_Callback(hObject, eventdata, handles)
+% % hObject    handle to perceptualTasks (see GCBO)
+% % eventdata  reserved - to be defined in a future version of MATLAB
+% % handles    structure with handles and user data (see GUIDATA)
+% 
+% % Hint: get(hObject,'Value') returns toggle state of perceptualTasks

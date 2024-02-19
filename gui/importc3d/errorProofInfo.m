@@ -60,7 +60,7 @@ out.EMGs = get(handles.emg_check,'Value');
 out.Nexus = get(handles.Nexus,'Value');
 out.EMGworks = get(handles.EMGworks,'Value');
 out.schenleyLab =  get(handles.schenleyLab,'Value');
-
+out.perceptualTasks =  get(handles.perceptualTasks,'Value');
 
 if isfield(handles,'secfolder_location') && out.Nexus==1
     out.secdir_location = handles.secfolder_location;
@@ -228,7 +228,7 @@ if ~(nargin>1 && ignoreErrors)
     end   
     
     
-    if ~isempty(out.secEMGworksdir_location) && ~exist(out.secEMGworksdir_location,'dir')
+    if ~isempty(out.secEMGworksdir_location) && out.secEMGworksdir_location~=0 && ~exist(out.secEMGworksdir_location,'dir')
         h_error=errordlg('Please enter a folder that exists','Directory Error');
         waitfor(h_error)
         uicontrol(handles.SecondEMGworksLocation)
