@@ -23,13 +23,13 @@
 try     % if Vicon Nexus is running with a file open, use that
     % Vicon Nexus must be open, offline, and the desired trial loaded
     vicon = ViconNexus();
-    [path,filenameWOExt] = vicon.GetTrialName;   % get trial open in Nexus
+    [pathTr,filenameWOExt] = vicon.GetTrialName;% get trial open in Nexus
     filenameWExt = [filenameWOExt '.c3d'];
     guessID = vicon.GetSubjectNames;    % retrieve participant / session ID
 catch   % use below two lines when processing c3d files not open in Nexus
-    [filenameWExt,path] = uigetfile('*.c3d', ...
+    [filenameWExt,pathTr] = uigetfile('*.c3d', ...
         'Please select the c3d file of interest:');
-    compsPath = strsplit(path,filesep);
+    compsPath = strsplit(pathTr,filesep);
     compsPath = compsPath(~cellfun(@isempty,compsPath));
     guessID = compsPath(contains(compsPath,'SA'));
     if isempty(guessID)
@@ -47,12 +47,12 @@ id = id{1};
 % process filename and paths
 [~,filename] = fileparts(filenameWExt);
 trialNum = filename(end-1:end); % last two characters of file name are #
-pathFigs = fullfile(path,'HreflexCalFigs');
+pathFigs = fullfile(pathTr,'HreflexCalFigs');
 if ~isfolder(pathFigs)          % if figure folder doesn't exist, ...
     mkdir(pathFigs);            % make it
 end
 
-H = btkReadAcquisition(fullfile(path,filenameWExt));    % load C3D data
+H = btkReadAcquisition(fullfile(pathTr,filenameWExt));    % load C3D data
 % using the same method as labtools, retrieve the analog data
 [analogs,analogsInfo] = btkGetAnalogs(H);
 
@@ -108,7 +108,7 @@ end
 if ~isfile(fullfile(pathFigs,fnameConf)) || ...
         (isfile(fullfile(pathFigs,fnameConf)) && ~isequal(definput,answer))
     save(fullfile(pathFigs,fnameConf),'answer','analogs','analogsInfo', ...
-        'H','id','path','pathFigs','trialNum','filenameWExt','fnameConf');
+        'H','id','pathTr','pathFigs','trialNum','filenameWExt','fnameConf');
 end
 
 %% 3. Extract User Input Parameters
@@ -407,6 +407,7 @@ ampsHwaveL = amps{2,2};
 ampsNoiseL = amps{2,3};
 
 %% 11. Compute Means & Ratios for Unique Stimulation Amplitudes
+% TODO: delete this block if variables not used anywhere
 ampsStimRU = unique(ampsStimR); % find unique stimulation amplitudes
 ampsStimLU = unique(ampsStimL);
 
@@ -422,53 +423,63 @@ ratioL = ampsHwaveL ./ ampsMwaveL;
 avgsRatioR = arrayfun(@(x) mean(ratioR(ampsStimR == x),'omitnan'),ampsStimRU);
 avgsRatioL = arrayfun(@(x) mean(ratioL(ampsStimL == x),'omitnan'),ampsStimLU);
 
-% Gaussian fit function for fitting average H-wave amplitude data
-% based on equation 2 (section 2.4. Curve fitting from Brinkworth et al.,
-% Journal of Neuroscience Methods, 2007)
-% fun = @(x,xdata)x(1).*exp(-((((((xdata).^(x(3)))-x(4))./(x(2))).^2)./2));
-% TODO: alternate approach would be to convert the mean H-wave amplitudes
-% to integer "frequencies" for each stim amplitude and fit a normal dist.
-% pdR = fitdist(ampsStimRU','Normal', ...
-%     'Frequency',round((avgsHwaveR / max(avgsHwaveR)) * 10000));
-% initialize coefficients
-% coefsR0 = [max(avgsHwaveR) std(ampsStimRU) 1 mean(ampsStimRU)];
-% coefsR = lsqcurvefit(fun,coefsR0,ampsStimRU,avgsHwaveR);
-% pdL = fitdist(ampsStimLU','Normal', ...
-%     'Frequency',round((avgsHwaveL / max(avgsHwaveL)) * 10000));
-% coefsL0 = [max(avgsHwaveL) std(ampsStimLU) 1 mean(ampsStimLU)];
-% coefsL = lsqcurvefit(fun,coefsL0,ampsStimLU,avgsHwaveL);
-
 %% 12. (Optional) Fit Gaussian to Average H-wave Amplitudes
-% TODO: Move to separate function if necessary
-% Gaussian fitting for Brinkworth's 2007 method
-% Gaussian equation: a * exp(-(((x^b - c)/d)^2) / 2)
-% fitFunc = @(coeffs, x) coeffs(1) * exp(-((((x.^coeffs(3)) - coeffs(4)) / coeffs(2)).^2) / 2);
-% initialGuess = [max(avgsHwaveR), std(ampsStimRU), 1, mean(ampsStimRU)];
-% coeffsR = lsqcurvefit(fitFunc, initialGuess, ampsStimRU, avgsHwaveR);
+fit = Hreflex.fitCal({ampsStimR';ampsStimL'},amps(:,1:2));
+
+I_fit = linspace(min(ampsStimR),max(ampsStimR),1000);   % fit intensities
+MR_fit = fit.M.modHyperbolic(fit.M.R.params,I_fit);     % right M-wave fit
+ML_fit = fit.M.modHyperbolic(fit.M.L.params,I_fit);     % left M-wave fit
+[~,indR2] = max(diff(diff(MR_fit)));
+[~,indL2] = max(diff(diff(ML_fit)));
+[~,indR3] = findpeaks(diff(diff(diff(MR_fit))),'NPeaks',1);
+[~,indL3] = findpeaks(diff(diff(diff(ML_fit))),'NPeaks',1);
+intensityR2 = I_fit(indR2);
+intensityL2 = I_fit(indL2);
+intensityR3 = I_fit(indR3);
+intensityL3 = I_fit(indL3);
+
+if fit.M.R.R2 > 0.95                            % if fit quality high, ...
+    fprintf(['Right leg M-wave fit R2: %0.2f > 0.95.\n2nd derivative ' ...
+        'current: %.1f mA.\n3rd derivative current: %.1f mA.\n'], ...
+        fit.M.R.R2,intensityR2,intensityR3);
+else
+    warning(['Right leg M-wave fit R2: %0.2f < 0.95.\nUse old approach' ...
+        ' to select experiment stimulation current.\n'],fit.M.R.R2);
+end
+if fit.M.L.R2 > 0.95
+    fprintf(['Left leg M-wave fit R2: %0.2f > 0.95.\n2nd derivative ' ...
+        'current: %.1f mA.\n3rd derivative current: %.1f mA.\n'], ...
+        fit.M.L.R2,intensityL2,intensityL3);
+else
+    fprintf(['Left leg M-wave fit R2: %0.2f < 0.95.\nUse old approach' ...
+        ' to select experiment stimulation current.\n'],fit.M.L.R2);
+end
 
 %% 13. Plot the Noise Distributions for Both Legs
 Hreflex.plotNoiseHistogram(ampsNoiseR,'Right Leg',id,trialNum,pathFigs);
 Hreflex.plotNoiseHistogram(ampsNoiseL,'Left Leg',id,trialNum,pathFigs);
 
 %% 14. Plot Recruitment Curve for Both Legs
-% TODO: add normal distribution fit to H-wave recruitment curve to pick out
-% peak amplitude and current at which peak occurs
-% incX = 0.1; % increment for curve fit (in mA)
-% xR = min(ampsStimRU):incX:max(ampsStimRU);
-% yR = fun(coefsR,xR);
-% xL = min(ampsStimLU):incX:max(ampsStimLU);
-% yL = fun(coefsL,xL);
-
 % compute four times noise floor (mean) to determine whether
 % to send participant home or not (at least one leg must exceed threshold)
-Hreflex.plotCal(ampsStimR,{ampsMwaveR; ampsHwaveR}, ...
-    'EMG Amplitude (mV)','Right Leg',id,trialNum,mean(ampsNoiseR),pathFigs);
-Hreflex.plotCal(ampsStimL,{ampsMwaveL; ampsHwaveL}, ...
-    'EMG Amplitude (mV)','Left Leg',id,trialNum,mean(ampsNoiseL),pathFigs);
+Hreflex.plotCal(ampsStimR,{ampsMwaveR;ampsHwaveR},'EMG Amplitude (mV)', ...
+    'Right Leg',id,trialNum,'fit',fit,'noise',mean(ampsNoiseR), ...
+    'pathFig',pathFigs);
+Hreflex.plotCal(ampsStimL,{ampsMwaveL;ampsHwaveL},'EMG Amplitude (mV)', ...
+    'Left Leg',id,trialNum,'fit',fit,'noise',mean(ampsNoiseL), ...
+    'pathFig',pathFigs);
 
-%% 15. Plot Ratio of H-wave to M-wave amplitude
+%% 15. Plot Normalized Recruitment Curve for Both Legs
+Hreflex.plotCal(ampsStimR,{ampsMwaveR;ampsHwaveR},'Proportion M_{max}', ...
+    'Right Leg',id,trialNum,'fit',fit,'shouldNormalize',true, ...
+    'pathFig',pathFigs);
+Hreflex.plotCal(ampsStimL,{ampsMwaveL;ampsHwaveL},'Proportion M_{max}', ...
+    'Left Leg',id,trialNum,'fit',fit,'shouldNormalize',true, ...
+    'pathFig',pathFigs);
+
+%% 16. Plot Ratio of H-wave to M-wave amplitude
 Hreflex.plotCal(ampsStimR,{ratioR},'H:M Ratio','Right Leg',id,trialNum, ...
-    pathFigs);
+    'pathFig',pathFigs);
 Hreflex.plotCal(ampsStimL,{ratioL},'H:M Ratio','Left Leg',id,trialNum, ...
-    pathFigs);
+    'pathFig',pathFigs);
 
